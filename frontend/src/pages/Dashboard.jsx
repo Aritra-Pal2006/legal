@@ -115,16 +115,57 @@ const Dashboard = () => {
         fileType: file.type,
         uploadedAt: new Date().toISOString(),
         metadata: result.metadata,
-        processed: false
+        processed: !result.warning
       };
       
       // Add the uploaded document to the list
       setDocuments(prev => [...prev, uploadedDocument]);
-      toast.success('Document uploaded successfully!');
+      
+      // Show appropriate success message
+      if (result.warning) {
+        toast.success(`${result.message}`, {
+          duration: 5000,
+          icon: '⚠️'
+        });
+        toast(result.warning, {
+          duration: 8000,
+          icon: 'ℹ️',
+          style: {
+            background: '#FEF3C7',
+            color: '#92400E',
+          },
+        });
+      } else {
+        toast.success('Document uploaded successfully!');
+      }
       
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload document. Please try again.');
+      
+      // Try to get error details from response
+      let errorMessage = error.message || 'Failed to upload document. Please try again.';
+      let suggestion = '';
+      
+      // If it's a network error, provide more context
+      if (error.message.includes('fetch')) {
+        errorMessage = 'Network error occurred while uploading.';
+        suggestion = 'Please check your connection and try again.';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 6000
+      });
+      
+      if (suggestion) {
+        toast(suggestion, {
+          duration: 8000,
+          icon: 'ℹ️',
+          style: {
+            background: '#FEF3C7',
+            color: '#92400E',
+          },
+        });
+      }
     } finally {
       setUploading(false);
     }
