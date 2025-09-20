@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Upload, FileText, MessageSquare, Shield, LogOut, User, ExternalLink, Trash2, Scale } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/authStore';
+import { API_ENDPOINTS } from '../config/api';
 
 const Dashboard = () => {
   const { user, signOut } = useAuthStore();
@@ -38,7 +39,7 @@ const Dashboard = () => {
           return;
         }
         
-        const response = await fetch('http://localhost:5000/api/documents', {
+        const response = await fetch(API_ENDPOINTS.DOCUMENTS, {
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
@@ -112,7 +113,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/documents/upload', {
+      const response = await fetch(API_ENDPOINTS.DOCUMENTS_UPLOAD, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -203,7 +204,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
+      const response = await fetch(`${API_ENDPOINTS.DOCUMENTS}/${documentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`

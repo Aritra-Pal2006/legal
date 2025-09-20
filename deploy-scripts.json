@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "deploy:backend": "cd backend && vercel --prod",
+    "deploy:frontend": "cd frontend && vercel --prod",
+    "deploy:all": "npm run deploy:backend && npm run deploy:frontend",
+    "setup:vercel": "npm install -g vercel",
+    "env:backend": "cd backend && vercel env add",
+    "env:frontend": "cd frontend && vercel env add"
+  }
+}
