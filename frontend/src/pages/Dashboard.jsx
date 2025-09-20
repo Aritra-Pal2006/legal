@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
 import { Link, useNavigate } from 'react-router-dom';
 import { Upload, FileText, MessageSquare, Shield, LogOut, User, ExternalLink, Trash2, Scale } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/authStore';
 import { API_ENDPOINTS } from '../config/api';
+import { useDropzone } from 'react-dropzone';
 
 const Dashboard = () => {
   const { user, signOut } = useAuthStore();

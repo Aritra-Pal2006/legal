@@ -34,6 +34,7 @@ const allowedOrigins = [
   'http://localhost:5174', 
   'http://localhost:5175',
   'http://localhost:5176',
+  'http://localhost:5178', // Add this line for the current frontend port
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
