@@ -13,7 +13,7 @@ export default defineConfig({
     exclude: []
   },
   server: {
-    port: 5174,
+    port: 5175,
     open: true
   }
 })

@@ -67,14 +67,24 @@ const extractTextFromFile = async (file) => {
           try {
             const pdfDataAlt = await pdfParse(file.buffer, {
               normalizeWhitespace: false,
-              disableCombineTextItems: false
+              disableCombineTextItems: false,
+              // Add additional parsing options for problematic PDFs
+              useWorker: false,
+              verbosity: 0
             });
-            return pdfDataAlt.text || 'Unable to extract readable text from this PDF. The document may be scanned or have formatting issues.';
+            if (pdfDataAlt.text && pdfDataAlt.text.trim().length > 0) {
+              return pdfDataAlt.text;
+            }
+            throw new Error('No text found in alternative parsing');
           } catch (altError) {
             console.warn('Alternative PDF parsing also failed:', altError.message);
             // Third attempt with minimal configuration
             try {
-              const pdfDataMinimal = await pdfParse(file.buffer);
+              const pdfDataMinimal = await pdfParse(file.buffer, {
+                // Minimal options for maximum compatibility
+                normalizeWhitespace: true,
+                disableCombineTextItems: true
+              });
               if (pdfDataMinimal.text && pdfDataMinimal.text.trim().length > 0) {
                 return pdfDataMinimal.text;
               }
@@ -83,7 +93,7 @@ const extractTextFromFile = async (file) => {
             }
             
             // Return a fallback message that allows upload to proceed
-            return 'This PDF file could not be processed for text extraction. The file may be corrupted, password-protected, or contain only images. You can still proceed with the upload, but AI analysis will be limited.';
+            return 'This PDF file could not be processed for text extraction. The file may be corrupted, password-protected, contain only scanned images, or have formatting issues. You can still proceed with the upload, but AI analysis capabilities will be limited.';
           }
         }
         

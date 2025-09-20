@@ -12,7 +12,11 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
-  Loader
+  Loader,
+  Scale,
+  Sparkles,
+  TrendingUp,
+  Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/authStore';
@@ -69,22 +73,35 @@ const DocumentViewer = () => {
 
   const loadDocument = async () => {
     try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        toast.error('Please sign in again');
+        navigate('/login');
+        return;
+      }
+
       const response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
       if (response.ok) {
         const docData = await response.json();
         setDocument(docData);
+      } else if (response.status === 404) {
+        toast.error('Document not found');
+        navigate('/dashboard');
+      } else if (response.status === 403) {
+        toast.error('You do not have permission to view this document');
+        navigate('/dashboard');
       } else {
         toast.error('Failed to load document');
         navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error loading document:', error);
-      toast.error('Error loading document');
+      toast.error('Error loading document. Please check your connection.');
       navigate('/dashboard');
     } finally {
       setLoading(false);
@@ -277,10 +294,13 @@ const DocumentViewer = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading document...</p>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+          </div>
+          <p className="text-lg font-semibold text-gray-700">Loading document...</p>
+          <p className="text-gray-500">Please wait while we prepare your document</p>
         </div>
       </div>
     );
@@ -300,30 +320,61 @@ const DocumentViewer = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative">
+      {/* Legal-themed Background Pattern */}
+      <div className="absolute inset-0">
+        {/* Professional grid pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23475569'%3E%3Cpath d='M30 30m-2 0a2 2 0 1 1 4 0a2 2 0 1 1-4 0'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+        
+        {/* Floating legal elements */}
+        <div className="absolute top-40 left-20 w-96 h-96 bg-gradient-radial from-blue-100/6 to-transparent rounded-full filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-40 right-20 w-80 h-80 bg-gradient-radial from-indigo-100/4 to-transparent rounded-full filter blur-3xl animate-pulse delay-700"></div>
+        
+        {/* Geometric patterns representing legal structure */}
+        <div className="absolute top-32 right-32 w-36 h-36 border border-blue-200/12 transform rotate-45 animate-pulse delay-500"></div>
+        <div className="absolute bottom-32 left-32 w-28 h-28 border border-slate-200/15 rounded-lg transform -rotate-12 animate-pulse delay-300"></div>
+        
+        {/* Very subtle legal icons */}
+        <div className="absolute top-16 left-16 opacity-[0.01]">
+          <Scale className="h-48 w-48 text-slate-600 transform rotate-15" />
+        </div>
+        <div className="absolute bottom-16 right-16 opacity-[0.008]">
+          <FileText className="h-40 w-40 text-blue-600 transform -rotate-8" />
+        </div>
+      </div>
+      
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="relative bg-white/80 backdrop-blur-lg shadow-sm border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 bg-gray-100/50 hover:bg-gray-200/50 px-4 py-2 rounded-xl transition-all duration-200"
               >
                 <ArrowLeft className="h-5 w-5" />
+                <span>Back to Dashboard</span>
               </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{document.filename}</h1>
-                <p className="text-sm text-gray-500">
-                  Uploaded {new Date(document.uploadedAt?.seconds * 1000 || document.uploadedAt).toLocaleDateString()}
-                </p>
+              <div className="h-6 border-l border-gray-300"></div>
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">{document.filename}</h1>
+                  <p className="text-sm text-gray-500">
+                    Uploaded {new Date(document.uploadedAt?.seconds * 1000 || document.uploadedAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               <button
                 onClick={handleTranslate}
                 disabled={processing}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-200 transform hover:scale-105"
               >
                 <Languages className="h-4 w-4" />
                 <span>Translate</span>
@@ -331,7 +382,7 @@ const DocumentViewer = () => {
               <button
                 onClick={handleAnalyzeRisks}
                 disabled={processing}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-200 transform hover:scale-105"
               >
                 <Shield className="h-4 w-4" />
                 <span>Analyze Risks</span>
@@ -339,9 +390,9 @@ const DocumentViewer = () => {
               <button
                 onClick={handleFairnessAnalysis}
                 disabled={processing}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-200 transform hover:scale-105"
               >
-                <CheckCircle className="h-4 w-4" />
+                <Star className="h-4 w-4" />
                 <span>Fairness Score</span>
               </button>
             </div>
@@ -349,28 +400,35 @@ const DocumentViewer = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="mb-6">
-          <nav className="flex space-x-8">
-            {['document', 'translation', 'risks', 'fairness', 'chat'].map((tab) => (
+        <div className="mb-8">
+          <nav className="flex space-x-1 bg-white/60 backdrop-blur-lg p-1 rounded-2xl border border-white/20">
+            {[
+              { key: 'document', label: 'Document', icon: FileText },
+              { key: 'translation', label: 'Translation', icon: Languages },
+              { key: 'risks', label: 'Risk Analysis', icon: Shield },
+              { key: 'fairness', label: 'Fairness Score', icon: Star },
+              { key: 'chat', label: 'Chat', icon: MessageSquare }
+            ].map(({ key, label, icon: Icon }) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
-                  activeTab === tab
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  activeTab === key
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
               >
-                {tab}
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
               </button>
             ))}
           </nav>
         </div>
 
         {/* Content Area */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-8">
           {activeTab === 'document' && (
             <div>
               <div className="flex items-center justify-between mb-4">
