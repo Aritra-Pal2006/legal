@@ -1,0 +1,259 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, FileText, MessageSquare, BarChart3, Plus, Trash2 } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import toast from 'react-hot-toast';
+import useDocumentStore from '../stores/documentStore';
+import useAuthStore from '../stores/authStore';
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const {
+    documents,
+    uploading,
+    error,
+    uploadDocument,
+    fetchDocuments,
+    deleteDocument,
+    clearError
+  } = useDocumentStore();
+
+  const [uploadMode, setUploadMode] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchDocuments();
+    }
+  }, [user, fetchDocuments]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  const onDrop = async (acceptedFiles) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      try {
+        await uploadDocument(file);
+        toast.success('Document uploaded successfully!');
+        setUploadMode(false);
+      } catch (error) {
+        toast.error('Upload failed: ' + error.message);
+      }
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
+      'text/plain': ['.txt']
+    },
+    maxFiles: 1,
+    disabled: uploading
+  });
+
+  const handleDeleteDocument = async (documentId, fileName) => {
+    if (window.confirm(`Are you sure you want to delete \"${fileName}\"?`)) {
+      try {
+        await deleteDocument(documentId);
+        toast.success('Document deleted successfully!');
+      } catch (error) {
+        toast.error('Delete failed: ' + error.message);
+      }
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  return (
+    <div className=\"min-h-screen bg-gray-50 py-8\">
+      <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">
+        {/* Header */}
+        <div className=\"mb-8\">
+          <h1 className=\"text-3xl font-bold text-gray-900\">
+            Welcome back, {user?.displayName || user?.email}
+          </h1>
+          <p className=\"mt-2 text-gray-600\">
+            Upload and analyze your legal documents with AI-powered insights.
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className=\"grid grid-cols-1 md:grid-cols-3 gap-6 mb-8\">
+          <div className=\"bg-white rounded-lg shadow p-6\">
+            <div className=\"flex items-center\">
+              <FileText className=\"h-8 w-8 text-blue-600\" />
+              <div className=\"ml-4\">
+                <p className=\"text-sm font-medium text-gray-600\">Documents</p>
+                <p className=\"text-2xl font-bold text-gray-900\">{documents.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className=\"bg-white rounded-lg shadow p-6\">
+            <div className=\"flex items-center\">
+              <MessageSquare className=\"h-8 w-8 text-green-600\" />
+              <div className=\"ml-4\">
+                <p className=\"text-sm font-medium text-gray-600\">Conversations</p>
+                <p className=\"text-2xl font-bold text-gray-900\">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className=\"bg-white rounded-lg shadow p-6\">
+            <div className=\"flex items-center\">
+              <BarChart3 className=\"h-8 w-8 text-purple-600\" />
+              <div className=\"ml-4\">
+                <p className=\"text-sm font-medium text-gray-600\">Analyses</p>
+                <p className=\"text-2xl font-bold text-gray-900\">0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        {!uploadMode ? (
+          <div className=\"bg-white rounded-lg shadow p-6 mb-8\">
+            <div className=\"text-center\">
+              <Upload className=\"mx-auto h-12 w-12 text-gray-400\" />
+              <h3 className=\"mt-2 text-lg font-medium text-gray-900\">
+                Upload a Legal Document
+              </h3>
+              <p className=\"mt-1 text-gray-500\">
+                Upload PDFs, Word documents, or text files to get started
+              </p>
+              <button
+                onClick={() => setUploadMode(true)}
+                className=\"mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700\"
+              >
+                <Plus className=\"h-4 w-4 mr-2\" />
+                Upload Document
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className=\"bg-white rounded-lg shadow p-6 mb-8\">
+            <div className=\"mb-4 flex justify-between items-center\">
+              <h3 className=\"text-lg font-medium text-gray-900\">Upload Document</h3>
+              <button
+                onClick={() => setUploadMode(false)}
+                className=\"text-gray-400 hover:text-gray-600\"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragActive
+                  ? 'border-blue-400 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              } ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <input {...getInputProps()} />
+              
+              {uploading ? (
+                <div className=\"flex flex-col items-center\">
+                  <div className=\"animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2\"></div>
+                  <p className=\"text-sm text-gray-600\">Uploading and processing...</p>
+                </div>
+              ) : (
+                <div>
+                  <Upload className=\"mx-auto h-8 w-8 text-gray-400 mb-2\" />
+                  {isDragActive ? (
+                    <p className=\"text-blue-600\">Drop your document here...</p>
+                  ) : (
+                    <div>
+                      <p className=\"text-gray-600\">
+                        Drag and drop your document here, or click to select
+                      </p>
+                      <p className=\"text-xs text-gray-500 mt-1\">
+                        Supports PDF, DOCX, DOC, and TXT files
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Documents List */}
+        <div className=\"bg-white rounded-lg shadow\">
+          <div className=\"px-6 py-4 border-b border-gray-200\">
+            <h3 className=\"text-lg font-medium text-gray-900\">Your Documents</h3>
+          </div>
+          
+          {documents.length === 0 ? (
+            <div className=\"p-6 text-center\">
+              <FileText className=\"mx-auto h-12 w-12 text-gray-400\" />
+              <p className=\"mt-2 text-gray-500\">No documents uploaded yet</p>
+              <p className=\"text-sm text-gray-400\">Upload your first document to get started</p>
+            </div>
+          ) : (
+            <div className=\"divide-y divide-gray-200\">
+              {documents.map((document) => (
+                <div key={document.id} className=\"p-6 hover:bg-gray-50\">
+                  <div className=\"flex items-center justify-between\">
+                    <div className=\"flex items-center flex-1\">
+                      <FileText className=\"h-8 w-8 text-blue-600 flex-shrink-0\" />
+                      <div className=\"ml-4 flex-1\">
+                        <h4 className=\"text-sm font-medium text-gray-900\">
+                          {document.filename}
+                        </h4>
+                        <div className=\"flex items-center mt-1 text-xs text-gray-500\">
+                          <span>Uploaded {formatDate(document.uploadedAt)}</span>
+                          <span className=\"mx-2\">•</span>
+                          <span>{formatFileSize(document.metadata?.size || 0)}</span>
+                          <span className=\"mx-2\">•</span>
+                          <span>{document.metadata?.wordCount || 0} words</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className=\"flex items-center space-x-2\">
+                      <button
+                        onClick={() => navigate(`/document/${document.id}`)}
+                        className=\"inline-flex items-center px-3 py-1 border border-blue-300 text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100\"
+                      >
+                        Analyze
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteDocument(document.id, document.filename)}
+                        className=\"p-1 text-gray-400 hover:text-red-600\"
+                        title=\"Delete document\"
+                      >
+                        <Trash2 className=\"h-4 w-4\" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;"
