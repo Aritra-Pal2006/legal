@@ -57,7 +57,7 @@ Click the preview browser button above to start using your Legal AI Document Ana
 - **Backend**: Node.js + Express.js
 - **Database**: Firebase
 - **Authentication**: Firebase Auth
-- **AI**: OpenAI GPT for text processing and analysis
+- **AI**: Google Gemini Pro for text processing and analysis
 
 ## Getting Started
 
@@ -80,3 +80,22 @@ legal-ai-analyzer/
 ## Environment Variables
 
 Create `.env` files in both frontend and backend directories with the required configuration.
+
+## Deployment
+
+### Frontend Deployment (Render)
+
+To deploy the frontend to Render:
+
+1. Connect your GitHub repository to Render
+2. Select the "Web Service" type
+3. Specify the root directory as `frontend`
+4. Set the build command to: `npm install --legacy-peer-deps && npm run build`
+5. Set the publish directory to: `dist`
+6. Add environment variables as needed
+
+Alternatively, you can use the provided `render.yaml` file which contains the deployment configuration.
+
+### Backend Deployment
+
+For backend deployment, you would need to set up a separate Render service for the backend Node.js application.

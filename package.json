@@ -6,10 +6,11 @@
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm start",
-    "client": "cd frontend && npm start",
+    "client": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
     "server:dev": "cd backend && npm run dev",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm install --legacy-peer-deps && npm run build"
   },
   "keywords": [
     "legal",
