@@ -22,8 +22,9 @@ Use the following settings:
 
 - **Name**: legal-ai-frontend (or any name you prefer)
 - **Environment**: Static Site
-- **Build Command**: `npm install && cd frontend && npm install && npm run build`
+- **Build Command**: `rm -rf frontend/node_modules frontend/package-lock.json && cd frontend && npm install --legacy-peer-deps && npm run build`
 - **Publish Directory**: `frontend/dist`
+- **Node Version**: 20.18.0 (specified in .nvmrc file)
 
 ### 3. Environment Variables
 
@@ -52,6 +53,7 @@ If you encounter build issues related to peer dependencies:
 1. The project has been updated to use compatible versions of all dependencies
 2. React has been downgraded to version 18.x for better compatibility
 3. All packages now use versions that support React 18
+4. Rollup has been pinned to version 4.x to avoid binary compatibility issues
 
 ### Runtime Issues
 
@@ -77,3 +79,20 @@ To use a custom domain:
 2. Click "Custom Domains"
 3. Follow the instructions to add your domain
 4. Update DNS records as instructed
+
+## Clean Installation
+
+If you encounter persistent dependency issues, you can perform a clean installation:
+
+```bash
+# Remove node_modules and package-lock.json
+rm -rf frontend/node_modules frontend/package-lock.json
+
+# Install dependencies with legacy peer deps flag
+cd frontend && npm install --legacy-peer-deps
+
+# Build the project
+npm run build
+```
+
+This approach ensures that all dependencies are installed fresh without any cached or conflicting modules.

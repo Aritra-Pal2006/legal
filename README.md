@@ -81,6 +81,15 @@ legal-ai-analyzer/
 
 Create `.env` files in both frontend and backend directories with the required configuration.
 
+## Node.js Version
+
+This project is configured to use Node.js version 20.18.0. You can find the version specification in the `.nvmrc` files in both the root directory and the frontend directory.
+
+To use this version with nvm:
+```bash
+nvm use
+```
+
 ## Deployment
 
 ### Frontend Deployment (Render)
@@ -90,12 +99,17 @@ To deploy the frontend to Render:
 1. Connect your GitHub repository to Render
 2. Select the "Web Service" type
 3. Specify the root directory as `frontend`
-4. Set the build command to: `npm install --legacy-peer-deps && npm run build`
-5. Set the publish directory to: `dist`
-6. Add environment variables as needed
+4. Set the build command to: `rm -rf frontend/node_modules frontend/package-lock.json && cd frontend && npm install --legacy-peer-deps && npm run build`
+5. Set the publish directory to: `frontend/dist`
+6. Set the Node.js version to: 20.18.0
+7. Add environment variables as needed
 
 Alternatively, you can use the provided `render.yaml` file which contains the deployment configuration.
 
 ### Backend Deployment
 
 For backend deployment, you would need to set up a separate Render service for the backend Node.js application.
+
+### Clean Installation
+
+If you encounter dependency issues during deployment (especially with Rollup modules), the deployment process now includes a clean installation step that removes node_modules and package-lock.json before installing dependencies. This ensures that all dependencies are installed fresh without any cached or conflicting modules.

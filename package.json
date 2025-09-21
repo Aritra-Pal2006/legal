@@ -10,8 +10,9 @@
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
     "server:dev": "cd backend && npm run dev",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm install && npm run build",
-    "build:legacy": "cd frontend && npm install --legacy-peer-deps && npm run build"
+    "build": "cd frontend && npm install --legacy-peer-deps && npm run build",
+    "build:legacy": "cd frontend && npm install --legacy-peer-deps && npm run build",
+    "clean-install": "rm -rf frontend/node_modules frontend/package-lock.json && cd frontend && npm install --legacy-peer-deps && npm run build"
   },
   "keywords": [
     "legal",

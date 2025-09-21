@@ -23,3 +23,20 @@ npm run build
 The build output will be in the `dist` folder, which can be deployed to any static hosting service like Vercel, Netlify, or Render.
 
 For Render deployment, the platform will automatically run the build command specified in your package.json.
+
+## Clean Installation
+
+If you encounter dependency issues (especially with Rollup modules), perform a clean installation:
+
+```bash
+# Remove node_modules and package-lock.json
+rm -rf node_modules package-lock.json
+
+# Install dependencies with legacy peer deps flag
+npm install --legacy-peer-deps
+
+# Build the project
+npm run build
+```
+
+This approach ensures that all dependencies are installed fresh without any cached or conflicting modules.

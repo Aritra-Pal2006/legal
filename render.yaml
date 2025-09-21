@@ -2,8 +2,8 @@ services:
   - type: web
     name: legal-ai-frontend
     env: static
-    buildCommand: npm install && cd frontend && npm install && npm run build
+    buildCommand: rm -rf frontend/node_modules frontend/package-lock.json && cd frontend && npm install --legacy-peer-deps && npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.18.0
