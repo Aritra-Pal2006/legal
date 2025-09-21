@@ -30,8 +30,10 @@ Use the following settings:
 
 Add any required environment variables in the Render dashboard:
 
-- `VITE_API_URL`: Your backend API URL
+- `VITE_BACKEND_URL`: Your backend API URL (e.g., https://legal-backend-96zq.onrender.com)
 - Any other environment variables your application needs
+
+Note: The `VITE_BACKEND_URL` environment variable will override the default localhost URL and is used for all API calls in production.
 
 ### 4. Deploy
 

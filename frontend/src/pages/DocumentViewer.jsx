@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/authStore';
+import { API_ENDPOINTS } from '../config/api';
 
 const DocumentViewer = () => {
   const { documentId } = useParams();
@@ -80,7 +81,7 @@ const DocumentViewer = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/documents/${documentId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -116,7 +117,7 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/ai/translate', {
+      const response = await fetch(API_ENDPOINTS.AI_TRANSLATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +157,7 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/ai/analyze-risks', {
+      const response = await fetch(API_ENDPOINTS.AI_ANALYZE_RISKS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/ai/fairness-score', {
+      const response = await fetch(API_ENDPOINTS.AI_FAIRNESS_SCORE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +234,7 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/ai/chat', {
+      const response = await fetch(API_ENDPOINTS.AI_CHAT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

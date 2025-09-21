@@ -81,6 +81,18 @@ legal-ai-analyzer/
 
 Create `.env` files in both frontend and backend directories with the required configuration.
 
+For the frontend, you can use the `.env.example` file as a template. Key variables include:
+- `VITE_API_URL`: Backend URL for local development (defaults to http://localhost:5000)
+- `VITE_BACKEND_URL`: Backend URL for production deployments (used in Render)
+
+Example frontend `.env`:
+```
+VITE_API_URL=http://localhost:5000
+VITE_BACKEND_URL=https://legal-backend-96zq.onrender.com
+```
+
+For Render deployment, you should set the `VITE_BACKEND_URL` environment variable in the Render dashboard to your backend URL.
+
 ## Node.js Version
 
 This project is configured to use Node.js version 20.18.0. You can find the version specification in the `.nvmrc` files in both the root directory and the frontend directory.
