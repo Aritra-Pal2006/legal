@@ -12,6 +12,7 @@ import DocumentViewer from './pages/DocumentViewer';
 import Profile from './pages/Profile';
 import DashboardDebug from './pages/DashboardDebug';
 import AuthTest from './pages/AuthTest';
+import FirebaseTest from './pages/FirebaseTest';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -73,6 +74,10 @@ function App() {
             <Route 
               path="/auth-test" 
               element={<AuthTest />} 
+            />
+            <Route 
+              path="/firebase-test" 
+              element={<FirebaseTest />} 
             />
             <Route 
               path="/debug" 

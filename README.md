@@ -125,3 +125,18 @@ For backend deployment, you would need to set up a separate Render service for t
 ### Clean Installation
 
 If you encounter dependency issues during deployment (especially with Rollup modules), the deployment process now includes a clean installation step that removes node_modules and package-lock.json before installing dependencies. This ensures that all dependencies are installed fresh without any cached or conflicting modules.
+
+## Firebase Troubleshooting
+
+If you encounter a Firebase "auth/unauthorized-domain" error after deployment:
+
+1. Navigate to your deployed application and go to `/firebase-test` to see domain information
+2. Copy your domain from the test page
+3. Go to Firebase Console → Authentication → Settings
+4. Add your domain to the "Authorized domains" list
+5. Save and redeploy your application
+
+You can also run the domain finder script:
+```bash
+node find-render-domain.js
+```

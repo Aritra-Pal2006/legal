@@ -1,100 +1,63 @@
 # Render Deployment Guide
 
-This guide explains how to deploy the Legal AI Document Analyzer frontend to Render.
-
 ## Prerequisites
 
-1. A Render account (https://render.com)
-2. A GitHub repository with your code
-3. Environment variables configured (if needed)
+1. A Render account (sign up at https://render.com)
+2. A Firebase project with web app configured
+3. Backend API deployed (assumed to be at https://legal-backend-96zq.onrender.com)
 
 ## Deployment Steps
 
-### 1. Connect Your Repository
+1. Fork this repository to your GitHub account
+2. Create a new Web Service on Render
+3. Connect your GitHub repository
+4. Configure the service with these settings:
+   - Build Command: `rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm run build`
+   - Publish Directory: `dist`
+   - Node Version: 20.18.0 (set as environment variable)
 
-1. Go to your Render Dashboard
-2. Click "New Web Service"
-3. Connect your GitHub account and select your repository
+## Environment Variables
 
-### 2. Configure Your Service
+Set these environment variables in your Render service:
 
-Use the following settings:
+- `VITE_FIREBASE_API_KEY` - Your Firebase API key
+- `VITE_FIREBASE_AUTH_DOMAIN` - Your Firebase auth domain
+- `VITE_FIREBASE_PROJECT_ID` - Your Firebase project ID
+- `VITE_FIREBASE_STORAGE_BUCKET` - Your Firebase storage bucket
+- `VITE_FIREBASE_MESSAGING_SENDER_ID` - Your Firebase messaging sender ID
+- `VITE_FIREBASE_APP_ID` - Your Firebase app ID
+- `VITE_BACKEND_URL` - Your backend API URL (https://legal-backend-96zq.onrender.com)
 
-- **Name**: legal-ai-frontend (or any name you prefer)
-- **Environment**: Static Site
-- **Build Command**: `rm -rf frontend/node_modules frontend/package-lock.json && cd frontend && npm install --legacy-peer-deps && npm run build`
-- **Publish Directory**: `frontend/dist`
-- **Node Version**: 20.18.0 (specified in .nvmrc file)
+## Fixing Firebase "auth/unauthorized-domain" Error
 
-### 3. Environment Variables
+After deploying your application, you may encounter a Firebase "auth/unauthorized-domain" error. This happens because Firebase Authentication restricts which domains can use your authentication service for security reasons.
 
-Add any required environment variables in the Render dashboard:
+To fix this issue:
 
-- `VITE_BACKEND_URL`: Your backend API URL (e.g., https://legal-backend-96zq.onrender.com)
-- Any other environment variables your application needs
+1. Go to the Firebase Console (https://console.firebase.google.com/)
+2. Select your project
+3. Navigate to Authentication > Settings tab
+4. In the "Authorized domains" section, add your Render domain:
+   - It will be in the format: `your-service-name.onrender.com`
+   - You can find your exact domain in the Render dashboard for your service
+   - For example: `legal-ai-frontend.onrender.com`
+5. Click "Save" to add the domain
+6. Redeploy your application on Render
 
-Note: The `VITE_BACKEND_URL` environment variable will override the default localhost URL and is used for all API calls in production.
-
-### 4. Deploy
-
-Click "Create Web Service" to start the deployment.
-
-## Alternative: Using render.yaml
-
-If you prefer to use the render.yaml file included in this repository:
-
-1. Make sure the render.yaml file is in your repository root
-2. Render will automatically detect and use this configuration
+If you're using the default service name from this repository, your domain will likely be:
+`legal-ai-frontend.onrender.com`
 
 ## Troubleshooting
 
-### Build Issues
+If you still encounter issues:
 
-If you encounter build issues related to peer dependencies:
+1. Check that all environment variables are correctly set in Render
+2. Verify that your backend API is accessible
+3. Ensure your Firebase configuration is correct
+4. Check Render logs for any build or runtime errors
 
-1. The project has been updated to use compatible versions of all dependencies
-2. React has been downgraded to version 18.x for better compatibility
-3. All packages now use versions that support React 18
-4. Rollup has been pinned to version 4.x to avoid binary compatibility issues
+## Common Error Messages
 
-### Runtime Issues
-
-If the application doesn't work after deployment:
-
-1. Check the browser console for errors
-2. Verify all environment variables are set correctly
-3. Ensure your backend API is accessible from the frontend
-
-## Updating Your Deployment
-
-To update your deployed application:
-
-1. Push changes to your GitHub repository
-2. Render will automatically detect the changes and start a new build
-3. Monitor the build logs in the Render dashboard
-
-## Custom Domain
-
-To use a custom domain:
-
-1. Go to your service settings in Render
-2. Click "Custom Domains"
-3. Follow the instructions to add your domain
-4. Update DNS records as instructed
-
-## Clean Installation
-
-If you encounter persistent dependency issues, you can perform a clean installation:
-
-```bash
-# Remove node_modules and package-lock.json
-rm -rf frontend/node_modules frontend/package-lock.json
-
-# Install dependencies with legacy peer deps flag
-cd frontend && npm install --legacy-peer-deps
-
-# Build the project
-npm run build
-```
-
-This approach ensures that all dependencies are installed fresh without any cached or conflicting modules.
+- `auth/unauthorized-domain`: Add your Render domain to Firebase authorized domains
+- `auth/network-request-failed`: Check network connectivity and CORS settings
+- `auth/invalid-api-key`: Verify your Firebase API key is correct
