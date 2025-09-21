@@ -22,7 +22,7 @@ Use the following settings:
 
 - **Name**: legal-ai-frontend (or any name you prefer)
 - **Environment**: Static Site
-- **Build Command**: `npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && npm run build`
+- **Build Command**: `npm install && cd frontend && npm install && npm run build`
 - **Publish Directory**: `frontend/dist`
 
 ### 3. Environment Variables
@@ -49,9 +49,9 @@ If you prefer to use the render.yaml file included in this repository:
 
 If you encounter build issues related to peer dependencies:
 
-1. Ensure the build command includes `--legacy-peer-deps`
-2. Check that all dependencies are compatible with each other
-3. Verify that react-pdf is version 10.1.0 or higher
+1. The project has been updated to use compatible versions of all dependencies
+2. React has been downgraded to version 18.x for better compatibility
+3. All packages now use versions that support React 18
 
 ### Runtime Issues
 
