@@ -47,6 +47,19 @@ To fix this issue:
 If you're using the default service name from this repository, your domain will likely be:
 `legal-ai-frontend.onrender.com`
 
+## Fixing File Upload Network Errors (CORS Issues)
+
+If you encounter network errors when uploading files, this is likely due to CORS restrictions between your frontend and backend services. The backend has been updated to allow requests from Render domains, but you need to redeploy your backend for the changes to take effect.
+
+### Steps to Fix:
+1. Redeploy your backend service on Render
+2. Try uploading a file again
+3. Check browser developer tools for any remaining errors
+
+### Common CORS Error Messages:
+- `CORS error: No 'Access-Control-Allow-Origin' header present`
+- `Blocked by CORS policy`
+
 ## Troubleshooting
 
 If you still encounter issues:
