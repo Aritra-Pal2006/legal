@@ -19,14 +19,33 @@ const PORT = process.env.PORT || 5000;
 
 // Security middleware
 app.use(helmet());
-app.use(compression());
+app.use(compression()); 
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 500 // Increased from 100 to 500 requests per windowMs
 });
 app.use(limiter);
+
+// Add connection tracking
+let activeConnections = 0;
+const MAX_CONNECTIONS = 100;
+
+app.use((req, res, next) => {
+  if (activeConnections >= MAX_CONNECTIONS) {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Server is at maximum capacity. Please try again later.'
+    });
+  }
+  
+  activeConnections++;
+  res.on('finish', () => activeConnections--);
+  res.on('close', () => activeConnections--);
+  
+  next();
+});
 
 // CORS configuration
 const allowedOrigins = [
@@ -78,12 +97,24 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Health check endpoint
+// Enhanced Health check endpoint
 app.get('/api/health', (req, res) => {
+  const memoryUsage = process.memoryUsage();
+  const uptime = process.uptime();
+  
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: uptime,
+    memoryUsage: {
+      rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + ' MB',
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + ' MB',
+      external: Math.round(memoryUsage.external / 1024 / 1024) + ' MB'
+    },
+    activeConnections: activeConnections,
+    nodeVersion: process.version,
+    platform: process.platform
   });
 });
 
@@ -118,5 +149,13 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Add periodic cleanup
+setInterval(() => {
+  if (global.gc) {
+    global.gc();
+    console.log('Manual garbage collection triggered');
+  }
+}, 30 * 60 * 1000); // Every 30 minutes
 
 module.exports = app;

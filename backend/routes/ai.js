@@ -5,9 +5,23 @@ const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
-// Initialize Google Generative AI
+// Initialize Google Generative AI with Gemini 1.5 Flash model
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// Add retry helper function
+const retryOperation = async (operation, maxRetries = 3, delay = 1000) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      console.log(`Attempt ${i + 1} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; // Exponential backoff
+    }
+  }
+};
 
 // Middleware to verify Firebase token
 const verifyToken = async (req, res, next) => {
@@ -76,7 +90,11 @@ Requirements:
 
 ${language === 'English' ? 'Simplified text:' : `Text in ${language}:`}`;
 
-    const result = await model.generateContent(prompt);
+    // Use retry mechanism for AI call
+    const result = await retryOperation(async () => {
+      return await model.generateContent(prompt);
+    });
+
     const response = await result.response;
     const translatedText = response.text().trim();
 
@@ -109,6 +127,14 @@ ${language === 'English' ? 'Simplified text:' : `Text in ${language}:`}`;
 
   } catch (error) {
     console.error('Translation error:', error);
+    // Check if it's a rate limit error
+    if (error.message.includes('rate') || error.message.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: 'Too many requests. Please wait a moment and try again.',
+        retryAfter: 60 // seconds
+      });
+    }
     res.status(500).json({ 
       error: 'Translation failed', 
       message: error.message 
@@ -179,7 +205,11 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
   }
 }`;
 
-    const result = await model.generateContent(prompt);
+    // Use retry mechanism for AI call
+    const result = await retryOperation(async () => {
+      return await model.generateContent(prompt);
+    });
+
     const response = await result.response;
     const responseText = response.text().trim();
 
@@ -230,6 +260,14 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
 
   } catch (error) {
     console.error('Risk analysis error:', error);
+    // Check if it's a rate limit error
+    if (error.message.includes('rate') || error.message.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: 'Too many requests. Please wait a moment and try again.',
+        retryAfter: 60 // seconds
+      });
+    }
     res.status(500).json({ 
       error: 'Risk analysis failed', 
       message: error.message 
@@ -300,7 +338,11 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
   "summary": "Brief summary of the fairness assessment"
 }`;
 
-    const result = await model.generateContent(prompt);
+    // Use retry mechanism for AI call
+    const result = await retryOperation(async () => {
+      return await model.generateContent(prompt);
+    });
+
     const response = await result.response;
     const responseText = response.text().trim();
 
@@ -352,6 +394,14 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
 
   } catch (error) {
     console.error('Fairness analysis error:', error);
+    // Check if it's a rate limit error
+    if (error.message.includes('rate') || error.message.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: 'Too many requests. Please wait a moment and try again.',
+        retryAfter: 60 // seconds
+      });
+    }
     res.status(500).json({ 
       error: 'Fairness analysis failed', 
       message: error.message 
@@ -418,7 +468,11 @@ Instructions:
 
 Answer:`;
 
-    const result = await model.generateContent(prompt);
+    // Use retry mechanism for AI call
+    const result = await retryOperation(async () => {
+      return await model.generateContent(prompt);
+    });
+
     const response = await result.response;
     const answer = response.text().trim();
 
@@ -463,6 +517,14 @@ Answer:`;
 
   } catch (error) {
     console.error('Chat error:', error);
+    // Check if it's a rate limit error
+    if (error.message.includes('rate') || error.message.includes('quota')) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: 'Too many requests. Please wait a moment and try again.',
+        retryAfter: 60 // seconds
+      });
+    }
     res.status(500).json({ 
       error: 'Chat failed', 
       message: error.message 
