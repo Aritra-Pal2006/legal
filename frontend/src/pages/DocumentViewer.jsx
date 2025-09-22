@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/authStore';
+import api from '../services/api';
+import { apiCallWithRetry } from '../utils/apiRetry';
 import { API_ENDPOINTS } from '../config/api';
 
 const DocumentViewer = () => {
@@ -74,78 +76,22 @@ const DocumentViewer = () => {
 
   const loadDocument = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        toast.error('Please sign in again');
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/documents/${documentId}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (response.ok) {
-        const docData = await response.json();
-        setDocument(docData);
-      } else if (response.status === 404) {
+      const response = await api.get(`/api/documents/${documentId}`);
+      setDocument(response.data);
+    } catch (error) {
+      console.error('Error loading document:', error);
+      if (error.response?.status === 404) {
         toast.error('Document not found');
         navigate('/dashboard');
-      } else if (response.status === 403) {
+      } else if (error.response?.status === 403) {
         toast.error('You do not have permission to view this document');
         navigate('/dashboard');
       } else {
         toast.error('Failed to load document');
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error('Error loading document:', error);
-      toast.error('Error loading document. Please check your connection.');
-      navigate('/dashboard');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleTranslate = async () => {
-    if (!document?.text) {
-      toast.error('No document text to translate');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const response = await fetch(API_ENDPOINTS.AI_TRANSLATE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          documentId,
-          text: document.text,
-          difficultyLevel,
-          language: selectedLanguage
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setTranslation(result);
-        setActiveTab('translation');
-        toast.success('Translation completed!');
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Translation error response:', errorData);
-        toast.error(`Translation failed: ${errorData.error || errorData.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Translation error:', error);
-      toast.error('Translation failed');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -157,31 +103,23 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch(API_ENDPOINTS.AI_ANALYZE_RISKS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
+      const response = await apiCallWithRetry(() => 
+        api.post('/api/ai/analyze-risks', {
           documentId,
           text: document.text
         })
-      });
+      );
 
-      if (response.ok) {
-        const result = await response.json();
-        setRiskAnalysis(result);
-        setActiveTab('risks');
-        toast.success('Risk analysis completed!');
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Risk analysis error response:', errorData);
-        toast.error(`Risk analysis failed: ${errorData.error || errorData.message || 'Unknown error'}`);
-      }
+      setRiskAnalysis(response.data);
+      setActiveTab('risks');
+      toast.success('Risk analysis completed!');
     } catch (error) {
       console.error('Risk analysis error:', error);
-      toast.error('Risk analysis failed');
+      if (error.response?.status === 429) {
+        toast.error(`Rate limit exceeded. Please wait ${error.response.data.retryAfter || 60} seconds and try again.`);
+      } else {
+        toast.error(`Risk analysis failed: ${error.response?.data?.error || error.message || 'Unknown error'}`);
+      }
     } finally {
       setProcessing(false);
     }
@@ -195,31 +133,55 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch(API_ENDPOINTS.AI_FAIRNESS_SCORE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
+      const response = await apiCallWithRetry(() => 
+        api.post('/api/ai/fairness-score', {
           documentId,
           text: document.text
         })
-      });
+      );
 
-      if (response.ok) {
-        const result = await response.json();
-        setFairnessScore(result);
-        setActiveTab('fairness');
-        toast.success('Fairness analysis completed!');
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Fairness analysis error response:', errorData);
-        toast.error(`Fairness analysis failed: ${errorData.error || errorData.message || 'Unknown error'}`);
-      }
+      setFairnessScore(response.data);
+      setActiveTab('fairness');
+      toast.success('Fairness analysis completed!');
     } catch (error) {
       console.error('Fairness analysis error:', error);
-      toast.error('Fairness analysis failed');
+      if (error.response?.status === 429) {
+        toast.error(`Rate limit exceeded. Please wait ${error.response.data.retryAfter || 60} seconds and try again.`);
+      } else {
+        toast.error(`Fairness analysis failed: ${error.response?.data?.error || error.message || 'Unknown error'}`);
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    if (!document?.text) {
+      toast.error('No document text to translate');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const response = await apiCallWithRetry(() => 
+        api.post('/api/ai/translate', {
+          documentId,
+          text: document.text,
+          difficultyLevel,
+          language: selectedLanguage
+        })
+      );
+
+      setTranslation(response.data);
+      setActiveTab('translation');
+      toast.success('Translation completed!');
+    } catch (error) {
+      console.error('Translation error:', error);
+      if (error.response?.status === 429) {
+        toast.error(`Rate limit exceeded. Please wait ${error.response.data.retryAfter || 60} seconds and try again.`);
+      } else {
+        toast.error(`Translation failed: ${error.response?.data?.error || error.message || 'Unknown error'}`);
+      }
     } finally {
       setProcessing(false);
     }
@@ -234,31 +196,25 @@ const DocumentViewer = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch(API_ENDPOINTS.AI_CHAT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
+      const response = await apiCallWithRetry(() => 
+        api.post('/api/ai/chat', {
           documentId,
           question: userMessage,
           conversationId
         })
-      });
+      );
 
-      if (response.ok) {
-        const result = await response.json();
-        setChatMessages(prev => [...prev, { type: 'assistant', content: result.answer }]);
-        if (!conversationId) {
-          setConversationId(result.conversationId);
-        }
-      } else {
-        toast.error('Failed to get response');
+      setChatMessages(prev => [...prev, { type: 'assistant', content: response.data.answer }]);
+      if (!conversationId) {
+        setConversationId(response.data.conversationId);
       }
     } catch (error) {
       console.error('Chat error:', error);
-      toast.error('Chat failed');
+      if (error.response?.status === 429) {
+        toast.error(`Rate limit exceeded. Please wait ${error.response.data.retryAfter || 60} seconds and try again.`);
+      } else {
+        toast.error('Failed to get response');
+      }
     } finally {
       setProcessing(false);
     }

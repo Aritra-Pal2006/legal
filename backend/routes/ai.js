@@ -9,18 +9,75 @@ const router = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Add retry helper function
-const retryOperation = async (operation, maxRetries = 3, delay = 1000) => {
+// Enhanced retry helper function with exponential backoff and rate limit handling
+const retryOperation = async (operation, maxRetries = 5, delay = 1000) => {
+  let lastError;
+  
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await operation();
     } catch (error) {
+      lastError = error;
+      
+      // Log all errors for debugging
+      console.log(`AI Operation attempt ${i + 1} failed:`, {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers
+        } : null
+      });
+      
+      // If it's a rate limit error, wait longer before retrying
+      if (error.message.includes('rate') || error.message.includes('quota') || error.message.includes('429') || error.status === 429) {
+        // Extract retry after value if available
+        let retryAfter = 60; // Default to 60 seconds
+        
+        // Check various possible headers for retry information
+        if (error.response && error.response.headers) {
+          const headers = error.response.headers;
+          const retryHeaders = [
+            'retry-after',
+            'x-ratelimit-reset',
+            'ratelimit-reset',
+            'x-ratelimit-remaining'
+          ];
+          
+          for (const header of retryHeaders) {
+            if (headers[header]) {
+              const value = parseInt(headers[header], 10);
+              if (!isNaN(value) && value > 0) {
+                retryAfter = Math.max(value, 10); // Minimum 10 seconds
+                break;
+              }
+            }
+          }
+        }
+        
+        // Exponential backoff with jitter
+        const baseDelay = (i + 1) * retryAfter * 1000;
+        const jitter = Math.random() * 2000; // Add up to 2 seconds of jitter
+        const rateLimitDelay = Math.min(baseDelay + jitter, 120000); // Cap at 2 minutes
+        
+        console.log(`Rate limit hit. Waiting ${rateLimitDelay}ms before retry ${i + 1}/${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
+        continue;
+      }
+      
+      // For other errors, use regular exponential backoff with jitter
       if (i === maxRetries - 1) throw error;
-      console.log(`Attempt ${i + 1} failed, retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+      const nextDelay = Math.min(delay + jitter, 30000); // Cap at 30 seconds
+      console.log(`Attempt ${i + 1} failed, retrying in ${nextDelay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, nextDelay));
       delay *= 2; // Exponential backoff
     }
   }
+  
+  throw lastError;
 };
 
 // Middleware to verify Firebase token
@@ -128,11 +185,15 @@ ${language === 'English' ? 'Simplified text:' : `Text in ${language}:`}`;
   } catch (error) {
     console.error('Translation error:', error);
     // Check if it's a rate limit error
-    if (error.message.includes('rate') || error.message.includes('quota')) {
-      return res.status(429).json({ 
+    if (error.message.includes('rate') || error.message.includes('quota') || error.status === 429) {
+      console.warn(`Rate limit exceeded for user ${req.user?.uid} at ${new Date().toISOString()}`);
+      // Calculate when the rate limit will reset
+      const resetTime = new Date(Date.now() + 60000); // Default 1 minute
+      return res.status(429).setHeader('Retry-After', '60').json({ 
         error: 'Rate limit exceeded', 
         message: 'Too many requests. Please wait a moment and try again.',
-        retryAfter: 60 // seconds
+        retryAfter: 60, // seconds
+        resetTime: resetTime.toISOString()
       });
     }
     res.status(500).json({ 
@@ -261,11 +322,15 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
   } catch (error) {
     console.error('Risk analysis error:', error);
     // Check if it's a rate limit error
-    if (error.message.includes('rate') || error.message.includes('quota')) {
-      return res.status(429).json({ 
+    if (error.message.includes('rate') || error.message.includes('quota') || error.status === 429) {
+      console.warn(`Rate limit exceeded for user ${req.user?.uid} at ${new Date().toISOString()}`);
+      // Calculate when the rate limit will reset
+      const resetTime = new Date(Date.now() + 60000); // Default 1 minute
+      return res.status(429).setHeader('Retry-After', '60').json({ 
         error: 'Rate limit exceeded', 
         message: 'Too many requests. Please wait a moment and try again.',
-        retryAfter: 60 // seconds
+        retryAfter: 60, // seconds
+        resetTime: resetTime.toISOString()
       });
     }
     res.status(500).json({ 
@@ -395,11 +460,15 @@ IMPORTANT: Respond ONLY with valid JSON in exactly this format. Do not include a
   } catch (error) {
     console.error('Fairness analysis error:', error);
     // Check if it's a rate limit error
-    if (error.message.includes('rate') || error.message.includes('quota')) {
-      return res.status(429).json({ 
+    if (error.message.includes('rate') || error.message.includes('quota') || error.status === 429) {
+      console.warn(`Rate limit exceeded for user ${req.user?.uid} at ${new Date().toISOString()}`);
+      // Calculate when the rate limit will reset
+      const resetTime = new Date(Date.now() + 60000); // Default 1 minute
+      return res.status(429).setHeader('Retry-After', '60').json({ 
         error: 'Rate limit exceeded', 
         message: 'Too many requests. Please wait a moment and try again.',
-        retryAfter: 60 // seconds
+        retryAfter: 60, // seconds
+        resetTime: resetTime.toISOString()
       });
     }
     res.status(500).json({ 
@@ -518,11 +587,15 @@ Answer:`;
   } catch (error) {
     console.error('Chat error:', error);
     // Check if it's a rate limit error
-    if (error.message.includes('rate') || error.message.includes('quota')) {
-      return res.status(429).json({ 
+    if (error.message.includes('rate') || error.message.includes('quota') || error.status === 429) {
+      console.warn(`Rate limit exceeded for user ${req.user?.uid} at ${new Date().toISOString()}`);
+      // Calculate when the rate limit will reset
+      const resetTime = new Date(Date.now() + 60000); // Default 1 minute
+      return res.status(429).setHeader('Retry-After', '60').json({ 
         error: 'Rate limit exceeded', 
         message: 'Too many requests. Please wait a moment and try again.',
-        retryAfter: 60 // seconds
+        retryAfter: 60, // seconds
+        resetTime: resetTime.toISOString()
       });
     }
     res.status(500).json({ 

@@ -15,22 +15,91 @@ const aiRoutes = require('./routes/ai');
 const authRoutes = require('./routes/auth');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Security middleware
 app.use(helmet());
 app.use(compression()); 
 
-// Rate limiting
-const limiter = rateLimit({
+// General rate limiting for non-AI routes
+const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500 // Increased from 100 to 500 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: {
+    error: 'Too many requests',
+    message: 'Rate limit exceeded. Please try again later.',
+    retryAfter: 60 // seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use(limiter);
+
+// Apply general rate limiting to all routes except AI routes
+app.use('/api/', generalLimiter);
+app.use('/api/auth', authRoutes);
+app.use('/api/documents', documentRoutes);
+
+// More generous rate limiting for AI operations
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Limit each IP to 500 AI requests per windowMs (more generous for AI)
+  message: {
+    error: 'Too many AI requests',
+    message: 'AI rate limit exceeded. Please try again later.',
+    retryAfter: 120 // seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply AI rate limiting specifically to AI routes
+app.use('/api/ai', aiLimiter);
 
 // Add connection tracking
 let activeConnections = 0;
-const MAX_CONNECTIONS = 100;
+const MAX_CONNECTIONS = 200;
+
+// Enhanced request queue for AI operations with adaptive rate limiting
+const requestQueue = [];
+let isProcessing = false;
+let queueProcessingDelay = 200; // Start with 200ms delay between requests
+
+const processQueue = async () => {
+  if (isProcessing || requestQueue.length === 0) return;
+  
+  isProcessing = true;
+  
+  while (requestQueue.length > 0) {
+    const { req, res, next } = requestQueue.shift();
+    
+    // Add adaptive delay between requests to prevent rate limiting
+    // Increase delay if we're getting rate limited
+    await new Promise(resolve => setTimeout(resolve, queueProcessingDelay));
+    next();
+  }
+  
+  isProcessing = false;
+};
+
+// Middleware to queue AI requests with better rate limiting
+app.use('/api/ai', (req, res, next) => {
+  // For GET requests, process immediately
+  if (req.method === 'GET') {
+    return next();
+  }
+  
+  // For POST requests to AI endpoints, add to queue with rate limiting awareness
+  requestQueue.push({ req, res, next });
+  
+  // If queue is getting long, increase delay to prevent rate limiting
+  if (requestQueue.length > 5) {
+    queueProcessingDelay = Math.min(queueProcessingDelay * 1.5, 2000); // Max 2 seconds
+  } else if (requestQueue.length < 2 && queueProcessingDelay > 200) {
+    queueProcessingDelay = Math.max(queueProcessingDelay * 0.8, 200); // Min 200ms
+  }
+  
+  processQueue();
+});
 
 app.use((req, res, next) => {
   if (activeConnections >= MAX_CONNECTIONS) {
@@ -53,7 +122,7 @@ const allowedOrigins = [
   'http://localhost:5174', 
   'http://localhost:5175',
   'http://localhost:5176',
-  'http://localhost:5178', // Add this line for the current frontend port
+  'http://localhost:5178',
   process.env.FRONTEND_URL,
   // Add Render frontend domain
   'https://legal-ai-frontend.onrender.com',
@@ -93,8 +162,6 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('combined'));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Enhanced Health check endpoint
